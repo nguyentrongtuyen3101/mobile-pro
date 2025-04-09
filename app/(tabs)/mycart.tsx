@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { FontAwesome, AntDesign } from '@expo/vector-icons';
 import { useRouter, useRootNavigationState } from 'expo-router';
-import { useCart } from '../CartContext';
+import { useCart } from '../contexts/CartContext';
 // Định nghĩa kiểu cho CartItem
 interface CartItem {
     title: string;

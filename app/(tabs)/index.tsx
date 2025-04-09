@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -7,13 +7,14 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-} from 'react-native';
-import { Ionicons, FontAwesome, FontAwesome5 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useCart } from '../CartContext';
+} from "react-native";
+import { Ionicons, FontAwesome, FontAwesome5 } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useCart } from "../contexts/CartContext";
+import { useUser } from "../contexts/UserContext"; // Import useUser từ UserContext
 
 // Định nghĩa kiểu cho props (nếu có)
-interface Props { }
+interface Props {}
 
 // Định nghĩa kiểu cho item trong section
 interface Item {
@@ -26,6 +27,10 @@ interface Item {
 const App: React.FC<Props> = () => {
   const router = useRouter();
   const { addToCart, cartItems } = useCart();
+  const { user } = useUser(); // Lấy thông tin user từ context
+
+  // Hiển thị thông tin người dùng nếu cần
+  console.log("User ID:", user?.id);
 
   const renderSection = (title: string, items: Item[]) => {
     return (
@@ -59,7 +64,7 @@ const App: React.FC<Props> = () => {
                     params: {
                       title: item.title,
                       price: item.price,
-                      image: item.title, // Đảm bảo truyền item.title, không phải index
+                      image: item.title,
                       subtitle: item.subtitle,
                     },
                   })
@@ -92,25 +97,61 @@ const App: React.FC<Props> = () => {
         <View>
           <FontAwesome5 name="carrot" size={40} color="orange" />
         </View>
-        <Text style={styles.textHeader}>Store Groceries</Text>
-
+        <Text style={styles.textHeader}>
+          Store Groceries {user ? ` - Welcome ${user.gmail}` : ""}
+        </Text>
       </View>
 
       {/* Sections */}
       {renderSection("Exclusive Offer", [
-        { title: "Organic Bananas", subtitle: "7pcs", price: "$4.99", image: require('../../assets/images/banana.png') },
-        { title: "Red Apple", subtitle: "1kg", price: "$4.99", image: require('../../assets/images/apple.png') },
-        { title: "Red Apple", subtitle: "1kg", price: "$4.99", image: require('../../assets/images/apple.png') },
+        {
+          title: "Organic Bananas",
+          subtitle: "7pcs",
+          price: "$4.99",
+          image: require("../../assets/images/banana.png"),
+        },
+        {
+          title: "Red Apple",
+          subtitle: "1kg",
+          price: "$4.99",
+          image: require("../../assets/images/apple.png"),
+        },
+        {
+          title: "Red Apple",
+          subtitle: "1kg",
+          price: "$4.99",
+          image: require("../../assets/images/apple.png"),
+        },
       ])}
 
       {renderSection("Best Selling", [
-        { title: "Bell Pepper Red", subtitle: "1kg", price: "$4.99", image: require('../../assets/images/bell_pepper.png') },
-        { title: "Ginger", subtitle: "250gm", price: "$4.99", image: require('../../assets/images/ginger.png') },
+        {
+          title: "Bell Pepper Red",
+          subtitle: "1kg",
+          price: "$4.99",
+          image: require("../../assets/images/bell_pepper.png"),
+        },
+        {
+          title: "Ginger",
+          subtitle: "250gm",
+          price: "$4.99",
+          image: require("../../assets/images/ginger.png"),
+        },
       ])}
 
       {renderSection("Groceries", [
-        { title: "Beef Bone", subtitle: "1kg", price: "$4.99", image: require('../../assets/images/beefBone.png') },
-        { title: "Broiler Chicken", subtitle: "1kg", price: "$4.99", image: require('../../assets/images/boiler_chicken.png') },
+        {
+          title: "Beef Bone",
+          subtitle: "1kg",
+          price: "$4.99",
+          image: require("../../assets/images/beefBone.png"),
+        },
+        {
+          title: "Broiler Chicken",
+          subtitle: "1kg",
+          price: "$4.99",
+          image: require("../../assets/images/boiler_chicken.png"),
+        },
       ])}
     </ScrollView>
   );
@@ -149,22 +190,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   cardContainer: {
-    flexDirection: "row", // Xếp các card theo hàng ngang
+    flexDirection: "row",
     paddingHorizontal: 16,
   },
   card: {
-    width: 150, // Điều chỉnh kích thước card theo nhu cầu
+    width: 150,
     backgroundColor: "#fff",
     borderRadius: 10,
-    marginRight: 10, // Khoảng cách giữa các card
+    marginRight: 10,
     alignItems: "center",
-    borderWidth: 1,  // Độ dày viền
-    borderColor: "#ddd",  // Màu viền (xám nhạt)
-    shadowColor: "#000",  // Đổ bóng
+    borderWidth: 1,
+    borderColor: "#ddd",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3, // Đổ bóng cho Android
+    elevation: 3,
   },
   cardImage: {
     width: 80,
@@ -179,7 +220,6 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     fontSize: 12,
     color: "gray",
-
   },
   cardFooter: {
     flexDirection: "row",
@@ -193,29 +233,49 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     marginBottom: 10,
-    marginLeft: 10
+    marginLeft: 10,
   },
   addButton: {
     backgroundColor: "#4CAF50",
     padding: 5,
     borderRadius: 5,
     marginBottom: 10,
-    marginRight: 10
+    marginRight: 10,
   },
-  container: { flex: 1, backgroundColor: 'white', padding: 16 },
-  header: { justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  location: { flexDirection: 'row', alignItems: 'center' },
-  locationText: { marginLeft: 4, color: 'black' },
-  icons: { flexDirection: 'row', alignItems: 'center' },
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f0f0', borderRadius: 25, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 16 },
+  container: { flex: 1, backgroundColor: "white", padding: 16 },
+  header: {
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  location: { flexDirection: "row", alignItems: "center" },
+  locationText: { marginLeft: 4, color: "black" },
+  icons: { flexDirection: "row", alignItems: "center" },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+    borderRadius: 25,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 16,
+  },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1 },
-  bannerContainer: { position: 'relative', marginBottom: 16 },
-  bannerImage: { width: '100%', height: 200, borderRadius: 10 },
-  bannerOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', borderRadius: 10 },
-  bannerTitle: { color: 'black', fontSize: 20, fontWeight: 'bold' },
-  bannerSubtitle: { color: 'green', fontSize: 14 },
-
+  bannerContainer: { position: "relative", marginBottom: 16 },
+  bannerImage: { width: "100%", height: 200, borderRadius: 10 },
+  bannerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  bannerTitle: { color: "black", fontSize: 20, fontWeight: "bold" },
+  bannerSubtitle: { color: "green", fontSize: 14 },
 });
 
 export default App;

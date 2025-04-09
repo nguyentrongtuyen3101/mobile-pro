@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { useFavourites } from '../FavouriteContext'; // Import FavouriteContext
-import { useCart } from '../CartContext'; // Import CartContext
+import { useFavourites } from '../contexts/FavouriteContext'; // Import FavouriteContext
+import { useCart } from '../contexts/CartContext'; // Import CartContext
 import { useRouter } from 'expo-router'; // Import useRouter để điều hướng
 
 const FavouriteScreen: React.FC = () => {

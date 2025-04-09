@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Picker } from '@react-native-picker/picker';
+import { useUser } from '../contexts/UserContext'; // Import useUser từ UserContext
 
 // Define valid FontAwesome 5 Free icon names
 type IconName =
@@ -23,49 +25,90 @@ type IconName =
     | 'sign-out-alt'
     | 'signal'
     | 'wifi'
-    | 'battery-full';
+    | 'battery-full'
+    | 'envelope'
+    | 'phone'
+    | 'home'
+    | 'birthday-cake'
+    | 'venus-mars'
+    | 'shopping-bag'
+    | 'wallet';
 
-// Định nghĩa kiểu cho thông tin cá nhân
-interface PersonalInfo {
+// Định nghĩa kiểu cho thông tin cá nhân của khách hàng (đồng bộ với User trong UserContext)
+interface CustomerInfo {
     name: string;
     email: string;
-    phone: string;
     address: string;
+    dateOfBirth: string;
+    gender: string;
 }
 
 const ProfileScreen: React.FC = () => {
     const router = useRouter();
+    const { user, setUser } = useUser(); // Lấy thông tin user từ UserContext
+
+    // Chuyển đổi gioitinh (boolean) thành gender (string)
+    const convertGender = (gioitinh: boolean | undefined): string => {
+        if (gioitinh === undefined) return 'Other';
+        return gioitinh ? 'Male' : 'Female';
+    };
+
+    // Khởi tạo customerInfo từ user
+    const initialCustomerInfo: CustomerInfo = user
+        ? {
+              name: user.hoten || 'Unknown',
+              email: user.gmail || 'Unknown',
+              address: user.diachi || 'Unknown',
+              dateOfBirth: user.sinhnhat || 'Unknown',
+              gender: convertGender(user.gioitinh),
+          }
+        : {
+              name: 'Unknown',
+              email: 'Unknown',
+              address: 'Unknown',
+              dateOfBirth: 'Unknown',
+              gender: 'Other',
+          };
 
     // State để quản lý thông tin cá nhân
-    const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
-        name: 'Afsar Hossen',
-        email: 'lmshuvo97@gmail.com',
-        phone: '+123 456 7890',
-        address: '123 Main Street, City, Country',
-    });
+    const [customerInfo, setCustomerInfo] = useState<CustomerInfo>(initialCustomerInfo);
 
     // State để quản lý chế độ chỉnh sửa
     const [isEditing, setIsEditing] = useState<boolean>(false);
 
     // State để lưu thông tin tạm thời khi chỉnh sửa
-    const [tempInfo, setTempInfo] = useState<PersonalInfo>({ ...personalInfo });
+    const [tempInfo, setTempInfo] = useState<CustomerInfo>({ ...customerInfo });
 
     // Hàm xử lý đăng xuất
     const handleLogout = () => {
-        router.replace('/login'); // Thay '/' bằng route của màn hình đăng nhập hoặc màn hình chính
+        setUser(null); // Xóa thông tin user khỏi context
+        router.replace('/login');
     };
 
     // Hàm xử lý khi nhấn nút "Edit" hoặc "Save"
     const handleEditToggle = () => {
         if (isEditing) {
-            // Lưu thông tin khi nhấn "Save"
-            setPersonalInfo({ ...tempInfo });
+            setCustomerInfo({ ...tempInfo });
+            // Cập nhật lại user trong UserContext nếu cần
+            if (user) {
+                setUser({
+                    ...user,
+                    hoten: tempInfo.name,
+                    gmail: tempInfo.email,
+                    diachi: tempInfo.address,
+                    sinhnhat: tempInfo.dateOfBirth,
+                    gioitinh: tempInfo.gender === 'Male' ? true : tempInfo.gender === 'Female' ? false : undefined,
+                });
+            }
+        } else {
+            // Khi bắt đầu chỉnh sửa, cập nhật tempInfo từ customerInfo
+            setTempInfo({ ...customerInfo });
         }
         setIsEditing(!isEditing);
     };
 
     // Hàm xử lý thay đổi giá trị của các trường thông tin
-    const handleInputChange = (field: keyof PersonalInfo, value: string) => {
+    const handleInputChange = (field: keyof CustomerInfo, value: string) => {
         setTempInfo((prev) => ({ ...prev, [field]: value }));
     };
 
@@ -85,42 +128,36 @@ const ProfileScreen: React.FC = () => {
                             onChangeText={(text) => handleInputChange('name', text)}
                         />
                     ) : (
-                        <Text style={styles.profileName}>{personalInfo.name}</Text>
+                        <Text style={styles.profileName}>{customerInfo.name}</Text>
                     )}
-                    <Text style={styles.profileEmail}>{personalInfo.email}</Text>
+                    <Text style={styles.profileEmail}>{customerInfo.email}</Text>
                 </View>
             </View>
 
             {/* Personal Information */}
             <ScrollView style={styles.infoContainer}>
                 <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Email</Text>
+                    <View style={styles.infoRow}>
+                        <FontAwesome5 name="envelope" size={20} color="gray" />
+                        <Text style={styles.infoLabel}>Email</Text>
+                    </View>
                     {isEditing ? (
                         <TextInput
                             style={styles.infoInput}
                             value={tempInfo.email}
                             onChangeText={(text) => handleInputChange('email', text)}
+                            keyboardType="email-address"
                         />
                     ) : (
-                        <Text style={styles.infoText}>{personalInfo.email}</Text>
+                        <Text style={styles.infoText}>{customerInfo.email}</Text>
                     )}
                 </View>
 
                 <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Phone</Text>
-                    {isEditing ? (
-                        <TextInput
-                            style={styles.infoInput}
-                            value={tempInfo.phone}
-                            onChangeText={(text) => handleInputChange('phone', text)}
-                        />
-                    ) : (
-                        <Text style={styles.infoText}>{personalInfo.phone}</Text>
-                    )}
-                </View>
-
-                <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Address</Text>
+                    <View style={styles.infoRow}>
+                        <FontAwesome5 name="home" size={20} color="gray" />
+                        <Text style={styles.infoLabel}>Address</Text>
+                    </View>
                     {isEditing ? (
                         <TextInput
                             style={styles.infoInput}
@@ -128,7 +165,45 @@ const ProfileScreen: React.FC = () => {
                             onChangeText={(text) => handleInputChange('address', text)}
                         />
                     ) : (
-                        <Text style={styles.infoText}>{personalInfo.address}</Text>
+                        <Text style={styles.infoText}>{customerInfo.address}</Text>
+                    )}
+                </View>
+
+                <View style={styles.infoItem}>
+                    <View style={styles.infoRow}>
+                        <FontAwesome5 name="birthday-cake" size={20} color="gray" />
+                        <Text style={styles.infoLabel}>Date of Birth</Text>
+                    </View>
+                    {isEditing ? (
+                        <TextInput
+                            style={styles.infoInput}
+                            value={tempInfo.dateOfBirth}
+                            onChangeText={(text) => handleInputChange('dateOfBirth', text)}
+                            placeholder="YYYY-MM-DD"
+                        />
+                    ) : (
+                        <Text style={styles.infoText}>{customerInfo.dateOfBirth}</Text>
+                    )}
+                </View>
+
+                <View style={styles.infoItem}>
+                    <View style={styles.infoRow}>
+                        <FontAwesome5 name="venus-mars" size={20} color="gray" />
+                        <Text style={styles.infoLabel}>Gender</Text>
+                    </View>
+                    {isEditing ? (
+                        <Picker
+                            selectedValue={tempInfo.gender}
+                            onValueChange={(value) => handleInputChange('gender', value)}
+                            style={styles.picker}
+                            itemStyle={styles.pickerItem}
+                        >
+                            <Picker.Item label="Male" value="Male" />
+                            <Picker.Item label="Female" value="Female" />
+                            <Picker.Item label="Other" value="Other" />
+                        </Picker>
+                    ) : (
+                        <Text style={styles.infoText}>{customerInfo.gender}</Text>
                     )}
                 </View>
             </ScrollView>
@@ -178,6 +253,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
         paddingVertical: 4,
+        color: '#333',
     },
     profileEmail: {
         color: 'gray',
@@ -185,35 +261,54 @@ const styles = StyleSheet.create({
     },
     infoContainer: {
         flex: 1,
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingTop: 16,
     },
     infoItem: {
         marginBottom: 20,
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
     },
     infoLabel: {
         fontSize: 16,
         fontWeight: 'bold',
         color: '#333',
+        marginLeft: 8,
     },
     infoText: {
         fontSize: 16,
         color: 'gray',
-        marginTop: 4,
+        marginLeft: 28,
+        paddingVertical: 6,
     },
     infoInput: {
         fontSize: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
         paddingVertical: 4,
-        marginTop: 4,
+        marginLeft: 28,
+        color: '#333',
+    },
+    picker: {
+        marginLeft: 28,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+        marginRight: -8,
+    },
+    pickerItem: {
+        fontSize: 16,
     },
     editButton: {
         backgroundColor: '#10B981',
-        paddingVertical: 12,
+        paddingVertical: 14,
         borderRadius: 8,
         alignItems: 'center',
         marginHorizontal: 16,
-        marginBottom: 16,
+        marginBottom: 10,
+        marginTop: 10,
     },
     editButtonText: {
         color: 'white',
@@ -224,15 +319,19 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 16,
+        paddingVertical: 14,
         backgroundColor: '#f0f0f0',
-        margin: 16,
+        marginHorizontal: 16,
+        marginBottom: 16,
         borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
     },
     logoutText: {
-        marginLeft: 8,
+        marginLeft: 10,
         color: 'green',
         fontSize: 16,
+        fontWeight: 'bold',
     },
 });
 

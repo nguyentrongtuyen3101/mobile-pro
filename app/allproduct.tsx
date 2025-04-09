@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCart } from '../app/CartContext';
+import { useCart } from './contexts/CartContext';
 
 // Định nghĩa kiểu cho item
 interface Item {

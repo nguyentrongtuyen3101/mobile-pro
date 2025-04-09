@@ -11,8 +11,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Feather from '@expo/vector-icons/Feather';
 import { Ionicons } from '@expo/vector-icons';
-import { useCart } from '../app/CartContext';
-import { useFavourites } from '../app/FavouriteContext';
+import { useCart } from './contexts/CartContext';
+import { useFavourites } from './contexts/FavouriteContext';
 
 // Map hình ảnh - Sử dụng key chữ thường để chuẩn hóa
 const imageMap: Record<string, any> = {
