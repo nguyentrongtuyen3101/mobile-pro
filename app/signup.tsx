@@ -2,7 +2,7 @@ import IP_ADDRESS from '../ipv4';
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, ScrollView, Alert, ActivityIndicator
+  StyleSheet, SafeAreaView, ScrollView, ActivityIndicator,Alert
 } from 'react-native';
 import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -13,19 +13,57 @@ const SignUpScreen: React.FC = () => {
   const [matKhau, setMatKhau] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const router = useRouter();
 
+  // Validation functions
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateName = (name: string) => {
+    const nameRegex = /^[a-zA-ZÀ-ỹ\s'-]{2,50}$/;
+    return nameRegex.test(name);
+  };
+
+  const validatePassword = (password: string) => {
+    return password.length >= 6;
+  };
+
   const handleSignUp = async () => {
+    setErrors({});
+
     // Validate input
-    if (!hoTen || !gmail || !matKhau) {
-      Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin!');
+    if (!hoTen.trim()) {
+      setErrors((prev) => ({ ...prev, hoTen: "Họ tên không được để trống" }));
       return;
     }
-
-    // Email validation regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(gmail)) {
-      Alert.alert('Lỗi', 'Email không hợp lệ!');
+    if (!validateName(hoTen)) {
+      setErrors((prev) => ({
+        ...prev,
+        hoTen:
+          "Họ tên không hợp lệ (chỉ chứa chữ cái, khoảng trắng, dấu gạch ngang, dấu nháy đơn, độ dài 2-50 ký tự)",
+      }));
+      return;
+    }
+    if (!gmail.trim()) {
+      setErrors((prev) => ({ ...prev, gmail: "Email không được để trống" }));
+      return;
+    }
+    if (!validateEmail(gmail)) {
+      setErrors((prev) => ({ ...prev, gmail: "Email không hợp lệ" }));
+      return;
+    }
+    if (!matKhau.trim()) {
+      setErrors((prev) => ({ ...prev, matKhau: "Mật khẩu không được để trống" }));
+      return;
+    }
+    if (!validatePassword(matKhau)) {
+      setErrors((prev) => ({
+        ...prev,
+        matKhau: "Mật khẩu phải có ít nhất 6 ký tự",
+      }));
       return;
     }
 
@@ -50,10 +88,16 @@ const SignUpScreen: React.FC = () => {
         Alert.alert('Thành công', data.message || 'Đăng ký thành công!');
         router.push('/login');
       } else {
-        Alert.alert('Lỗi', typeof data === 'string' ? data : 'Đăng ký thất bại');
+        setErrors((prev) => ({
+          ...prev,
+          general: data.message || 'Đăng ký thất bại',
+        }));
       }
     } catch (error) {
-      Alert.alert('Lỗi', 'Không thể kết nối đến server');
+      setErrors((prev) => ({
+        ...prev,
+        general: 'Không thể kết nối đến server',
+      }));
       console.error('API Error:', error);
     } finally {
       setIsLoading(false);
@@ -63,16 +107,12 @@ const SignUpScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Logo */}
         <View style={styles.logoContainer}>
           <FontAwesome5 name="carrot" size={50} color="orange" />
         </View>
-
-        {/* Form */}
         <Text style={styles.title}>Đăng ký</Text>
         <Text style={styles.subtitle}>Nhập thông tin để tiếp tục</Text>
 
-        {/* Họ tên */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Họ và tên</Text>
           <TextInput
@@ -81,9 +121,9 @@ const SignUpScreen: React.FC = () => {
             value={hoTen}
             onChangeText={setHoTen}
           />
+          {errors.hoTen && <Text style={styles.errorText}>{errors.hoTen}</Text>}
         </View>
 
-        {/* Email */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Email</Text>
           <TextInput
@@ -94,9 +134,9 @@ const SignUpScreen: React.FC = () => {
             keyboardType="email-address"
             autoCapitalize="none"
           />
+          {errors.gmail && <Text style={styles.errorText}>{errors.gmail}</Text>}
         </View>
 
-        {/* Mật khẩu */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Mật khẩu</Text>
           <View style={styles.inputWrapper}>
@@ -118,9 +158,11 @@ const SignUpScreen: React.FC = () => {
               />
             </TouchableOpacity>
           </View>
+          {errors.matKhau && (
+            <Text style={styles.errorText}>{errors.matKhau}</Text>
+          )}
         </View>
 
-        {/* Button */}
         <TouchableOpacity
           style={[styles.button, isLoading && styles.disabledButton]}
           onPress={handleSignUp}
@@ -133,7 +175,10 @@ const SignUpScreen: React.FC = () => {
           )}
         </TouchableOpacity>
 
-        {/* Login link */}
+        {errors.general && (
+          <Text style={styles.errorText}>{errors.general}</Text>
+        )}
+
         <TouchableOpacity onPress={() => router.push('/login')}>
           <Text style={styles.footerText}>
             Đã có tài khoản? <Text style={styles.loginText}>Đăng nhập</Text>
@@ -142,7 +187,7 @@ const SignUpScreen: React.FC = () => {
       </ScrollView>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'white' },
@@ -172,6 +217,11 @@ const styles = StyleSheet.create({
   buttonText: { color: 'white', fontWeight: '600' },
   footerText: { textAlign: 'center', marginTop: 20, color: 'gray' },
   loginText: { color: '#53B175', fontWeight: '600' },
+  errorText: {
+    color: "red",
+    fontSize: 12,
+    marginTop: 5,
+  },
 });
 
 export default SignUpScreen;

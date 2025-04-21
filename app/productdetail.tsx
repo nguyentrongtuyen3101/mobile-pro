@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -13,20 +13,18 @@ import Feather from '@expo/vector-icons/Feather';
 import { Ionicons } from '@expo/vector-icons';
 import { useCart } from './contexts/CartContext';
 import { useFavourites } from './contexts/FavouriteContext';
+import IP_ADDRESS from '../ipv4';
 
-// Map hình ảnh - Sử dụng key chữ thường để chuẩn hóa
-const imageMap: Record<string, any> = {
-    'apple': require('../assets/images/apple.png'),
-    'carrot': require('../assets/images/coka.png'),
-    'coca cola': require('../assets/images/coka.png'),
-    'orange juice': require('../assets/images/coka.png'),
-    'organic bananas': require('../assets/images/banana.png'),
-    'red apple': require('../assets/images/apple.png'),
-    'bell pepper red': require('../assets/images/bell_pepper.png'),
-    'ginger': require('../assets/images/ginger.png'),
-    'beef bone': require('../assets/images/beefBone.png'),
-    'broiler chicken': require('../assets/images/boiler_chicken.png'),
-};
+// Định nghĩa kiểu cho sản phẩm từ API
+interface Product {
+    id: number;
+    loai: string;
+    tenSanPham: string;
+    moTa: string;
+    giaTien: number;
+    duongDanAnh: string;
+    soLuong: number;
+}
 
 const ProductPage: React.FC = () => {
     const params = useLocalSearchParams();
@@ -34,41 +32,63 @@ const ProductPage: React.FC = () => {
     const { addToCart } = useCart();
     const { addToFavourites, removeFromFavourites, favouriteItems } = useFavourites();
 
-    // Xử lý các giá trị params để đảm bảo chúng là string
-    const title = Array.isArray(params.title) ? params.title[0] : params.title || 'Unknown Product';
-    const subtitle = Array.isArray(params.subtitle) ? params.subtitle[0] : params.subtitle || '';
-    const price = Array.isArray(params.price) ? params.price[0] : params.price || '$0.00';
-    const imageKeyRaw = Array.isArray(params.image) ? params.image[0] : params.image || 'red apple';
+    // Lấy id từ params
+    const productId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-    // Chuẩn hóa imageKey: bỏ khoảng trắng thừa và chuyển về chữ thường
-    const imageKey = imageKeyRaw.trim().toLowerCase();
-    const finalImageKey = isNaN(Number(imageKey)) ? imageKey : title.toLowerCase();
+    // State để lưu thông tin sản phẩm từ API
+    const [product, setProduct] = useState<Product | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Debug
-    console.log('imageKeyRaw:', imageKeyRaw);
-    console.log('finalImageKey:', finalImageKey);
-    console.log('imageMap[finalImageKey]:', imageMap[finalImageKey]);
-    console.log('Available keys in imageMap:', Object.keys(imageMap));
-
-    const [liked, setLiked] = useState(favouriteItems.some((item) => item.title === title));
+    // State cho số lượng và trạng thái yêu thích
+    const [liked, setLiked] = useState(false);
     const [quantity, setQuantity] = useState(1);
 
-    // Lấy ảnh từ map, nếu không có thì dùng ảnh mặc định
-    const imageSource = imageMap[finalImageKey] || require('../assets/images/apple.png');
+    // Gọi API để lấy chi tiết sản phẩm
+    useEffect(() => {
+        const fetchProduct = async () => {
+            if (!productId) {
+                setError('Không tìm thấy ID sản phẩm');
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/sanphamchitiet/${productId}`);
+                if (!response.ok) {
+                    throw new Error('Không tìm thấy sản phẩm');
+                }
+                const data: Product = await response.json();
+                setProduct(data);
+
+                // Kiểm tra sản phẩm có trong danh sách yêu thích không
+                setLiked(favouriteItems.some((item) => item.title === data.tenSanPham));
+            } catch (err) {
+                setError('Lỗi khi lấy thông tin sản phẩm');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProduct();
+    }, [productId, favouriteItems]);
 
     // Hàm xử lý khi nhấn nút thích
     const handleLikePress = () => {
-        const product = {
-            title,
-            subtitle,
-            price,
-            image: imageSource,
+        if (!product) return;
+
+        const productData = {
+            title: product.tenSanPham,
+            subtitle: `${product.soLuong} items`,
+            price: `$${product.giaTien}`,
+            image: { uri: `http://${IP_ADDRESS}:8080/API_for_mobile/api${product.duongDanAnh}` },
         };
 
         if (liked) {
-            removeFromFavourites(title);
+            removeFromFavourites(product.tenSanPham);
         } else {
-            addToFavourites(product);
+            addToFavourites(productData);
         }
         setLiked(!liked);
     };
@@ -87,14 +107,16 @@ const ProductPage: React.FC = () => {
 
     // Hàm xử lý thêm sản phẩm vào giỏ hàng
     const handleAddToBasket = () => {
-        const product = {
-            title,
-            subtitle,
-            price,
-            image: imageSource,
+        if (!product) return;
+
+        const productData = {
+            title: product.tenSanPham,
+            subtitle: `${product.soLuong} items`,
+            price: `$${product.giaTien}`,
+            image: { uri: `http://${IP_ADDRESS}:8080/API_for_mobile/api${product.duongDanAnh}` },
             quantity,
         };
-        addToCart(product);
+        addToCart(productData);
         router.push('/mycart');
     };
 
@@ -102,6 +124,24 @@ const ProductPage: React.FC = () => {
     const handleGoBack = () => {
         router.back();
     };
+
+    // Hiển thị khi đang tải
+    if (loading) {
+        return (
+            <View style={styles.container}>
+                <Text>Đang tải...</Text>
+            </View>
+        );
+    }
+
+    // Hiển thị khi có lỗi
+    if (error || !product) {
+        return (
+            <View style={styles.container}>
+                <Text>{error || 'Không tìm thấy sản phẩm'}</Text>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -121,14 +161,18 @@ const ProductPage: React.FC = () => {
             <ScrollView>
                 {/* Product Image */}
                 <View style={styles.imagedaidien}>
-                    <Image source={imageSource} style={styles.productImage} />
+                    <Image
+                        source={{ uri: `http://${IP_ADDRESS}:8080/API_for_mobile/api${product.duongDanAnh}` }}
+                        style={styles.productImage}
+                        onError={() => console.log('Lỗi tải hình ảnh')}
+                    />
                 </View>
                 {/* Product Info */}
                 <View style={styles.productInfo}>
                     <View style={styles.productHeader}>
                         <View>
-                            <Text style={styles.productTitle}>{title}</Text>
-                            <Text style={styles.productSubtitle}>{subtitle}</Text>
+                            <Text style={styles.productTitle}>{product.tenSanPham}</Text>
+                            <Text style={styles.productSubtitle}>{product.soLuong} items</Text>
                         </View>
 
                         <TouchableOpacity onPress={handleLikePress}>
@@ -150,7 +194,7 @@ const ProductPage: React.FC = () => {
                                 <Text style={styles.quantityButton}>+</Text>
                             </TouchableOpacity>
                         </View>
-                        <Text style={styles.productPrice}>{price}</Text>
+                        <Text style={styles.productPrice}>${product.giaTien}</Text>
                     </View>
                 </View>
 
@@ -162,8 +206,7 @@ const ProductPage: React.FC = () => {
                                 <Text style={styles.detailTitle}>Product Detail</Text>
                             </View>
                             <Text style={styles.detailText}>
-                                Apples Are Nutritious. Apples May Be Good For Weight Loss.
-                                Apples May Be Good For Your Heart. As Part Of A Healthful And Varied Diet.
+                                {product.moTa || 'Không có mô tả.'}
                             </Text>
                         </View>
                     </View>
@@ -221,14 +264,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-    },
-    imageContainer: {
-        padding: 16,
-    },
-    image: {
-        width: '100%',
-        height: 200,
-        borderRadius: 8,
     },
     productInfo: {
         padding: 16,

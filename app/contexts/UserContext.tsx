@@ -9,6 +9,7 @@ interface User {
   diachi:string;
   gioitinh:boolean| undefined;
   sinhnhat:string;
+  duongDanAnh:string| undefined;
 }
 
 // Định nghĩa kiểu cho context

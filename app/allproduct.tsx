@@ -3,9 +3,11 @@ import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, TextInput } 
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCart } from './contexts/CartContext';
+import IP_ADDRESS from '../ipv4'; // Thêm import để gọi API
 
 // Định nghĩa kiểu cho item
 interface Item {
+    id: number; // Thêm id vào interface
     title: string;
     subtitle: string;
     price: string;
@@ -52,7 +54,7 @@ const AllProducts: React.FC = () => {
             {/* Danh sách sản phẩm */}
             <FlatList
                 data={filteredItems}
-                keyExtractor={(item, index) => index.toString()}
+                keyExtractor={(item) => item.id.toString()} // Sử dụng id làm key
                 renderItem={({ item }) => (
                     <TouchableOpacity
                         style={styles.card}
@@ -60,10 +62,7 @@ const AllProducts: React.FC = () => {
                             router.push({
                                 pathname: '/productdetail',
                                 params: {
-                                    title: item.title,
-                                    price: item.price,
-                                    image: item.title,
-                                    subtitle: item.subtitle,
+                                    id: item.id, // Chỉ truyền id của sản phẩm
                                 },
                             })
                         }
