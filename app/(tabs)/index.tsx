@@ -10,14 +10,16 @@ import {
 } from "react-native";
 import { Ionicons, FontAwesome, FontAwesome5 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useCart } from "../contexts/CartContext";
-import { useUser } from "../contexts/UserContext"; // Import useUser từ UserContext
+import { useCart } from "../contexts/CartContext"; // Thay useGioHang bằng useCart
+import { useUser } from "../contexts/UserContext";
+import IP_ADDRESS from "../../ipv4";
 
 // Định nghĩa kiểu cho props (nếu có)
 interface Props {}
 
 // Định nghĩa kiểu cho item trong section
 interface Item {
+  id: number;
   title: string;
   subtitle: string;
   price: string;
@@ -26,11 +28,58 @@ interface Item {
 
 const App: React.FC<Props> = () => {
   const router = useRouter();
-  const { addToCart, cartItems } = useCart();
-  const { user } = useUser(); // Lấy thông tin user từ context
+  const { addToCart } = useCart(); // Thay useGioHang bằng useCart
+  const { user } = useUser();
 
-  // Hiển thị thông tin người dùng nếu cần
   console.log("User ID:", user?.id);
+
+  const handleAddToCart = async (item: Item) => {
+    if (!user) {
+      alert("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
+      router.push("/login");
+      return;
+    }
+
+    const cartData = {
+      accountId: parseInt(user.id),
+      sanPhamId: item.id,
+      soLuong: 1,
+    };
+
+    try {
+      const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/themgiohang`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(cartData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Lỗi khi gọi API thêm giỏ hàng: ${response.status} - ${errorText}`);
+        throw new Error(`Không thể thêm vào giỏ hàng: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log("Thêm vào giỏ hàng thành công:", result);
+
+      const productData = {
+        id: item.id,
+        title: item.title,
+        subtitle: item.subtitle,
+        price: item.price,
+        image: item.image,
+        quantity: result.soLuong,
+      };
+      addToCart(productData); // Thay addToGioHang bằng addToCart
+
+      alert("Đã thêm sản phẩm vào giỏ hàng!");
+    } catch (err: any) {
+      console.error("Lỗi khi thêm vào giỏ hàng:", err);
+      alert(`Lỗi khi thêm vào giỏ hàng: ${err.message}`);
+    }
+  };
 
   const renderSection = (title: string, items: Item[]) => {
     return (
@@ -62,6 +111,7 @@ const App: React.FC<Props> = () => {
                   router.push({
                     pathname: "/productdetail",
                     params: {
+                      id: item.id,
                       title: item.title,
                       price: item.price,
                       image: item.title,
@@ -77,7 +127,7 @@ const App: React.FC<Props> = () => {
                   <Text style={styles.cardPrice}>{item.price}</Text>
                   <TouchableOpacity
                     style={styles.addButton}
-                    onPress={() => addToCart(item)}
+                    onPress={() => handleAddToCart(item)}
                   >
                     <Ionicons name="add" size={20} color="white" />
                   </TouchableOpacity>
@@ -92,7 +142,6 @@ const App: React.FC<Props> = () => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <FontAwesome5 name="carrot" size={40} color="orange" />
@@ -102,21 +151,23 @@ const App: React.FC<Props> = () => {
         </Text>
       </View>
 
-      {/* Sections */}
       {renderSection("Exclusive Offer", [
         {
+          id: 1,
           title: "Organic Bananas",
           subtitle: "7pcs",
           price: "$4.99",
           image: require("../../assets/images/banana.png"),
         },
         {
+          id: 2,
           title: "Red Apple",
           subtitle: "1kg",
           price: "$4.99",
           image: require("../../assets/images/apple.png"),
         },
         {
+          id: 2,
           title: "Red Apple",
           subtitle: "1kg",
           price: "$4.99",
@@ -126,12 +177,14 @@ const App: React.FC<Props> = () => {
 
       {renderSection("Best Selling", [
         {
+          id: 3,
           title: "Bell Pepper Red",
           subtitle: "1kg",
           price: "$4.99",
           image: require("../../assets/images/bell_pepper.png"),
         },
         {
+          id: 4,
           title: "Ginger",
           subtitle: "250gm",
           price: "$4.99",
@@ -141,12 +194,14 @@ const App: React.FC<Props> = () => {
 
       {renderSection("Groceries", [
         {
+          id: 5,
           title: "Beef Bone",
           subtitle: "1kg",
           price: "$4.99",
           image: require("../../assets/images/beefBone.png"),
         },
         {
+          id: 6,
           title: "Broiler Chicken",
           subtitle: "1kg",
           price: "$4.99",

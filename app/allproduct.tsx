@@ -3,11 +3,11 @@ import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, TextInput } 
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCart } from './contexts/CartContext';
-import IP_ADDRESS from '../ipv4'; // Thêm import để gọi API
+import { useUser } from './contexts/UserContext'; // Thêm useUser
+import IP_ADDRESS from '../ipv4';
 
-// Định nghĩa kiểu cho item
 interface Item {
-    id: number; // Thêm id vào interface
+    id: number;
     title: string;
     subtitle: string;
     price: string;
@@ -18,29 +18,76 @@ const AllProducts: React.FC = () => {
     const router = useRouter();
     const { title, items } = useLocalSearchParams();
     const { addToCart } = useCart();
+    const { user } = useUser(); // Thêm useUser
 
-    // Parse items từ JSON string về mảng object
-    const parsedItems: Item[] = items ? JSON.parse(items as string) : [];
+    console.log("Raw items from params:", items);
 
-    // State để lưu từ khóa tìm kiếm
+    let parsedItems: Item[] = [];
+    try {
+        parsedItems = items ? JSON.parse(items as string) : [];
+    } catch (error) {
+        console.error("Error parsing items:", error);
+    }
+    console.log("Parsed items:", parsedItems);
+
     const [searchQuery, setSearchQuery] = useState<string>('');
 
-    // Lọc danh sách sản phẩm dựa trên từ khóa tìm kiếm
     const filteredItems = parsedItems.filter((item) =>
         item.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Hàm xử lý khi nhấn nút "add"
-    const handleAddToCart = (item: Item) => {
-        addToCart(item);
+    const handleAddToCart = async (item: Item) => {
+        if (!user) {
+            alert("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
+            router.push("/login");
+            return;
+        }
+
+        const cartData = {
+            accountId: parseInt(user.id),
+            sanPhamId: item.id,
+            soLuong: 1,
+        };
+
+        try {
+            const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/themgiohang`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(cartData),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Lỗi khi gọi API thêm giỏ hàng: ${response.status} - ${errorText}`);
+                throw new Error(`Không thể thêm vào giỏ hàng: ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log("Thêm vào giỏ hàng thành công:", result);
+
+            const productData = {
+                id: item.id,
+                title: item.title,
+                subtitle: item.subtitle,
+                price: item.price,
+                image: item.image,
+                quantity: result.soLuong,
+            };
+            addToCart(productData);
+
+            alert("Đã thêm sản phẩm vào giỏ hàng!");
+        } catch (err: any) {
+            console.error("Lỗi khi thêm vào giỏ hàng:", err);
+            alert(`Lỗi khi thêm vào giỏ hàng: ${err.message}`);
+        }
     };
 
     return (
         <View style={styles.container}>
-            {/* Header */}
             <Text style={styles.header}>{title as string}</Text>
 
-            {/* Search Input */}
             <View style={styles.searchContainer}>
                 <Ionicons name="search" size={20} color="gray" style={styles.searchIcon} />
                 <TextInput
@@ -51,36 +98,42 @@ const AllProducts: React.FC = () => {
                 />
             </View>
 
-            {/* Danh sách sản phẩm */}
             <FlatList
                 data={filteredItems}
-                keyExtractor={(item) => item.id.toString()} // Sử dụng id làm key
-                renderItem={({ item }) => (
-                    <TouchableOpacity
-                        style={styles.card}
-                        onPress={() =>
-                            router.push({
-                                pathname: '/productdetail',
-                                params: {
-                                    id: item.id, // Chỉ truyền id của sản phẩm
-                                },
-                            })
-                        }
-                    >
-                        <Image source={item.image} style={styles.cardImage} />
-                        <Text style={styles.cardTitle}>{item.title}</Text>
-                        <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
-                        <View style={styles.cardFooter}>
-                            <Text style={styles.cardPrice}>{item.price}</Text>
-                            <TouchableOpacity
-                                style={styles.addButton}
-                                onPress={() => handleAddToCart(item)}
-                            >
-                                <Ionicons name="add" size={20} color="white" />
-                            </TouchableOpacity>
-                        </View>
-                    </TouchableOpacity>
-                )}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => {
+                    console.log("Item ID before navigation:", item.id);
+                    return (
+                        <TouchableOpacity
+                            style={styles.card}
+                            onPress={() => {
+                                if (!item.id) {
+                                    console.error("Item ID is undefined:", item);
+                                    return;
+                                }
+                                router.push({
+                                    pathname: '/productdetail',
+                                    params: {
+                                        id: item.id,
+                                    },
+                                });
+                            }}
+                        >
+                            <Image source={item.image} style={styles.cardImage} />
+                            <Text style={styles.cardTitle}>{item.title}</Text>
+                            <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+                            <View style={styles.cardFooter}>
+                                <Text style={styles.cardPrice}>{item.price}</Text>
+                                <TouchableOpacity
+                                    style={styles.addButton}
+                                    onPress={() => handleAddToCart(item)}
+                                >
+                                    <Ionicons name="add" size={20} color="white" />
+                                </TouchableOpacity>
+                            </View>
+                        </TouchableOpacity>
+                    );
+                }}
                 ListEmptyComponent={() => (
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyText}>No products found.</Text>

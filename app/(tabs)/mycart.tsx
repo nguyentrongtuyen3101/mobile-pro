@@ -13,9 +13,13 @@ import {
 } from 'react-native';
 import { FontAwesome, AntDesign } from '@expo/vector-icons';
 import { useRouter, useRootNavigationState } from 'expo-router';
-import { useCart } from '../contexts/CartContext';
-// Định nghĩa kiểu cho CartItem
+import { useCart } from '../contexts/CartContext'; // Thay useGioHang bằng useCart
+import { useUser } from '../contexts/UserContext';
+import IP_ADDRESS from '../../ipv4';
+
+// Định nghĩa kiểu cho CartItem (đồng bộ với CartContext)
 interface CartItem {
+    id: number;
     title: string;
     subtitle: string;
     price: string;
@@ -23,11 +27,22 @@ interface CartItem {
     quantity: number;
 }
 
+// Định nghĩa kiểu cho dữ liệu từ API
+interface GioHangResponse {
+    id: number;
+    accountId: number;
+    sanPhamId: number;
+    tenSanPham: string;
+    duongDanAnh: string;
+    giaTien: number;
+    soLuong: number;
+}
+
 // Định nghĩa props cho CartItem component
 interface CartItemProps {
     item: CartItem;
-    onRemove: (title: string) => void;
-    onUpdateQuantity: (title: string, newQuantity: number) => void;
+    onRemove: (id: number) => void; // Thay gioHangId bằng id
+    onUpdateQuantity: (id: number, newQuantity: number) => void; // Thay gioHangId bằng id
 }
 
 const CartItemComponent: React.FC<CartItemProps> = ({ item, onRemove, onUpdateQuantity }) => {
@@ -42,7 +57,7 @@ const CartItemComponent: React.FC<CartItemProps> = ({ item, onRemove, onUpdateQu
                 <View style={styles.quantityControl}>
                     <TouchableOpacity
                         style={styles.quantityButton}
-                        onPress={() => onUpdateQuantity(item.title, item.quantity - 1)}
+                        onPress={() => onUpdateQuantity(item.id, item.quantity - 1)}
                         disabled={item.quantity <= 1}
                     >
                         <Text style={styles.quantityButtonText}>-</Text>
@@ -50,14 +65,14 @@ const CartItemComponent: React.FC<CartItemProps> = ({ item, onRemove, onUpdateQu
                     <Text style={styles.quantityText}>{item.quantity}</Text>
                     <TouchableOpacity
                         style={styles.quantityButton}
-                        onPress={() => onUpdateQuantity(item.title, item.quantity + 1)}
+                        onPress={() => onUpdateQuantity(item.id, item.quantity + 1)}
                     >
                         <Text style={styles.quantityButtonText}>+</Text>
                     </TouchableOpacity>
                 </View>
             </View>
             <View style={styles.closeprice}>
-                <TouchableOpacity style={styles.deleteButton} onPress={() => onRemove(item.title)}>
+                <TouchableOpacity style={styles.deleteButton} onPress={() => onRemove(item.id)}>
                     <FontAwesome name="close" size={24} color="#B3B3B3" />
                 </TouchableOpacity>
                 <Text style={styles.price}>${price.toFixed(2)}</Text>
@@ -67,7 +82,8 @@ const CartItemComponent: React.FC<CartItemProps> = ({ item, onRemove, onUpdateQu
 };
 
 const App = () => {
-    const { cartItems, setCartItems } = useCart(); // Lấy cartItems và setCartItems từ CartContext
+    const { cartItems, setCartItems } = useCart(); // Thay useGioHang bằng useCart
+    const { user } = useUser();
     const [showCheckout, setShowCheckout] = useState(false);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const blurAnim = useRef(new Animated.Value(1)).current;
@@ -88,6 +104,42 @@ const App = () => {
         ]).start();
     }, [showCheckout]);
 
+    // Gọi API để lấy giỏ hàng từ server
+    useEffect(() => {
+        const fetchCartItems = async () => {
+            if (!user) {
+                console.log("User not logged in, cannot fetch cart items");
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/giohang?accountId=${user.id}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`Lỗi khi lấy giỏ hàng: ${response.status} - ${errorText}`);
+                    throw new Error(`Không thể lấy giỏ hàng: ${errorText}`);
+                }
+
+                const data: GioHangResponse[] = await response.json();
+                const cartItemsFromServer: CartItem[] = data.map((item) => ({
+                    id: item.sanPhamId, // Sử dụng sanPhamId làm id
+                    title: item.tenSanPham,
+                    subtitle: `${item.soLuong} items`,
+                    price: `$${item.giaTien}`,
+                    image: { uri: `http://${IP_ADDRESS}:8080/API_for_mobile/api${item.duongDanAnh}` },
+                    quantity: item.soLuong,
+                }));
+
+                setCartItems(cartItemsFromServer); // Cập nhật vào CartContext
+            } catch (err: any) {
+                console.error("Lỗi khi lấy giỏ hàng:", err);
+                alert(`Lỗi khi lấy giỏ hàng: ${err.message}`);
+            }
+        };
+
+        fetchCartItems();
+    }, [user, setCartItems]);
+
     const [deliveryMethod, setDeliveryMethod] = useState('Standard Delivery');
     const [paymentMethod, setPaymentMethod] = useState('Credit Card');
     const [promoCode, setPromoCode] = useState('');
@@ -95,28 +147,40 @@ const App = () => {
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'failed'>('pending');
     const [showError, setShowError] = useState(false);
 
-    // Tính tổng giá tiền
     const totalCost = cartItems.reduce((total, item) => {
         const price = parseFloat(item.price.replace('$', '')) * item.quantity;
         return total + price;
     }, 0) - discount;
 
-    // Xử lý tăng/giảm số lượng
-    const handleUpdateQuantity = (title: string, newQuantity: number) => {
-        if (newQuantity < 1) return; // Không cho phép số lượng nhỏ hơn 1
+    const handleUpdateQuantity = (id: number, newQuantity: number) => {
+        if (newQuantity < 1) return;
         setCartItems((prevItems) =>
             prevItems.map((item) =>
-                item.title === title ? { ...item, quantity: newQuantity } : item
+                item.id === id ? { ...item, quantity: newQuantity } : item
             )
         );
     };
 
-    // Xử lý xóa sản phẩm
-    const handleRemoveItem = (title: string) => {
-        setCartItems((prevItems) => prevItems.filter((item) => item.title !== title));
+    const handleRemoveItem = async (id: number) => {
+        try {
+            const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/giohang/${id}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Lỗi khi xóa sản phẩm khỏi giỏ hàng: ${response.status} - ${errorText}`);
+                throw new Error(`Không thể xóa sản phẩm: ${errorText}`);
+            }
+
+            setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
+            alert('Xóa sản phẩm khỏi giỏ hàng thành công!');
+        } catch (err: any) {
+            console.error("Lỗi khi xóa sản phẩm:", err);
+            alert(`Lỗi khi xóa sản phẩm: ${err.message}`);
+        }
     };
 
-    // Xử lý áp dụng mã giảm giá
     const applyPromoCode = () => {
         if (promoCode === 'DISCOUNT10') {
             setDiscount(2);
@@ -127,19 +191,17 @@ const App = () => {
         }
     };
 
-    // Xử lý thanh toán
     const handlePayment = () => {
-        const isSuccess = Math.random() > 0.5; // Giả lập thanh toán thành công/thất bại
+        const isSuccess = Math.random() > 0.5;
         if (isSuccess) {
             setPaymentStatus('success');
-            router.push('/orderaccept'); // Điều hướng tới màn hình thành công
+            router.push('/orderaccept');
         } else {
-            setPaymentStatus('failed'); // Hiển thị màn hình thất bại
+            setPaymentStatus('failed');
             setShowError(true);
         }
     };
 
-    // Xử lý thử lại khi thanh toán thất bại
     const handleTryAgain = () => {
         setShowError(false);
         setPaymentStatus('pending');
@@ -303,7 +365,7 @@ const styles = StyleSheet.create({
     imageIcon: {
         width: 130,
         height: 120,
-        marginLeft: 100
+        marginLeft: 100,
     },
     title: {
         fontSize: 24,
@@ -323,7 +385,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 16,
         marginTop: 16,
-        textAlign: 'center'
+        textAlign: 'center',
     },
     closeIconContainer: {
         alignSelf: 'flex-end',
@@ -332,9 +394,8 @@ const styles = StyleSheet.create({
     cost: {
         color: '#181725',
         fontSize: 16,
-        marginRight: -130
+        marginRight: -130,
     },
-
     content: {
         marginBottom: 20,
     },
@@ -350,15 +411,15 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     deleteButton: {
-        padding: 8, // Khoảng cách giữa nút X và giá
+        padding: 8,
     },
     myCart: { flex: 1 },
     closeprice: {
-        flexDirection: 'column', // Sắp xếp theo chiều dọc
-        alignItems: 'center', // Căn giữa theo trục ngang
-        justifyContent: 'space-between', // Dãn cách đều
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         height: 80,
-    }, // C
+    },
     container: { flex: 1, backgroundColor: 'white' },
     header: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#e0e0e0', alignItems: 'center' },
     headerText: { fontSize: 20, fontWeight: 'bold' },
@@ -381,31 +442,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 20,
-        marginLeft: 38
+        marginLeft: 38,
     },
     checkoutButtonText: { color: 'white', fontSize: 16, paddingLeft: 45 },
     checkoutPrice: { backgroundColor: 'darkgreen', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4, width: "30%" },
     checkoutPriceText: { color: 'white' },
-
-    // ✅ Style cho màn hình Checkout
     overlay: {
-        ...StyleSheet.absoluteFillObject, // Chồng lên toàn bộ màn hình
-        backgroundColor: 'rgba(0,0,0,0.5)', // Làm mờ nền
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    checkoutContainer: {
-        width: '80%',
-        backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 20,
-        alignItems: 'center',
-    },
-    checkoutTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-    checkoutText: { fontSize: 18, marginBottom: 20 },
-    confirmButton: { backgroundColor: '#53B175', padding: 15, borderRadius: 10, width: '100%', alignItems: 'center' },
-    confirmButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-    backButton: { position: 'absolute', left: 15, top: 15 },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -451,16 +498,6 @@ const styles = StyleSheet.create({
     buttonText: {
         color: 'white',
         fontSize: 16,
-        fontWeight: '600',
-    },
-    footerText: {
-        fontSize: 12,
-        color: '#6b7280',
-        textAlign: 'center',
-        marginTop: 10,
-    },
-    footerLink: {
-        color: 'black',
         fontWeight: '600',
     },
 });

@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import SplashScreen from '@/components/SplashScreen';
 import { CartProvider } from './contexts/CartContext';
 import { FavouriteProvider } from './contexts/FavouriteContext';
-import { UserProvider } from './contexts/UserContext'; // Thêm import UserProvider
+import { UserProvider } from './contexts/UserContext';
 
 export default function Layout() {
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
@@ -74,7 +74,7 @@ export default function Layout() {
   // Nếu chưa kiểm tra xong isFirstLaunch hoặc isLoggedIn, render Stack
   if (isFirstLaunch === null || isLoggedIn === null) {
     return (
-      <UserProvider> {/* Thêm UserProvider */}
+      <UserProvider>
         <CartProvider>
           <FavouriteProvider>
             <Stack screenOptions={{ headerShown: false }}>
@@ -94,7 +94,7 @@ export default function Layout() {
 
   // Render Stack cho tất cả các trường hợp còn lại
   return (
-    <UserProvider> {/* Thêm UserProvider */}
+    <UserProvider>
       <CartProvider>
         <FavouriteProvider>
           <Stack screenOptions={{ headerShown: false }}>

@@ -13,9 +13,9 @@ import Feather from '@expo/vector-icons/Feather';
 import { Ionicons } from '@expo/vector-icons';
 import { useCart } from './contexts/CartContext';
 import { useFavourites } from './contexts/FavouriteContext';
+import { useUser } from './contexts/UserContext';
 import IP_ADDRESS from '../ipv4';
 
-// Định nghĩa kiểu cho sản phẩm từ API
 interface Product {
     id: number;
     loai: string;
@@ -26,25 +26,33 @@ interface Product {
     soLuong: number;
 }
 
+interface FavouriteItem {
+    id: number;
+    title: string;
+    subtitle: string;
+    price: string;
+    image: any;
+}
+
 const ProductPage: React.FC = () => {
     const params = useLocalSearchParams();
     const router = useRouter();
     const { addToCart } = useCart();
     const { addToFavourites, removeFromFavourites, favouriteItems } = useFavourites();
+    const { user } = useUser();
 
-    // Lấy id từ params
+    console.log("Params received:", params);
+
     const productId = Array.isArray(params.id) ? params.id[0] : params.id;
+    console.log("Parsed productId:", productId);
 
-    // State để lưu thông tin sản phẩm từ API
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // State cho số lượng và trạng thái yêu thích
     const [liked, setLiked] = useState(false);
     const [quantity, setQuantity] = useState(1);
 
-    // Gọi API để lấy chi tiết sản phẩm
     useEffect(() => {
         const fetchProduct = async () => {
             if (!productId) {
@@ -56,16 +64,17 @@ const ProductPage: React.FC = () => {
             try {
                 const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/sanphamchitiet/${productId}`);
                 if (!response.ok) {
-                    throw new Error('Không tìm thấy sản phẩm');
+                    const errorText = await response.text();
+                    console.error(`Lỗi khi gọi API: ${response.status} - ${errorText}`);
+                    throw new Error(`Không tìm thấy sản phẩm: ${errorText}`);
                 }
                 const data: Product = await response.json();
                 setProduct(data);
 
-                // Kiểm tra sản phẩm có trong danh sách yêu thích không
                 setLiked(favouriteItems.some((item) => item.title === data.tenSanPham));
-            } catch (err) {
-                setError('Lỗi khi lấy thông tin sản phẩm');
-                console.error(err);
+            } catch (err: any) {
+                setError(`Lỗi khi lấy thông tin sản phẩm: ${err.message}`);
+                console.error("Chi tiết lỗi:", err);
             } finally {
                 setLoading(false);
             }
@@ -74,11 +83,11 @@ const ProductPage: React.FC = () => {
         fetchProduct();
     }, [productId, favouriteItems]);
 
-    // Hàm xử lý khi nhấn nút thích
     const handleLikePress = () => {
         if (!product) return;
 
-        const productData = {
+        const productData: FavouriteItem = {
+            id: product.id,
             title: product.tenSanPham,
             subtitle: `${product.soLuong} items`,
             price: `$${product.giaTien}`,
@@ -93,39 +102,70 @@ const ProductPage: React.FC = () => {
         setLiked(!liked);
     };
 
-    // Hàm xử lý tăng số lượng
     const handleIncreaseQuantity = () => {
         setQuantity((prev) => prev + 1);
     };
 
-    // Hàm xử lý giảm số lượng
     const handleDecreaseQuantity = () => {
         if (quantity > 1) {
             setQuantity((prev) => prev - 1);
         }
     };
 
-    // Hàm xử lý thêm sản phẩm vào giỏ hàng
-    const handleAddToBasket = () => {
+    const handleAddToBasket = async () => {
         if (!product) return;
 
-        const productData = {
-            title: product.tenSanPham,
-            subtitle: `${product.soLuong} items`,
-            price: `$${product.giaTien}`,
-            image: { uri: `http://${IP_ADDRESS}:8080/API_for_mobile/api${product.duongDanAnh}` },
-            quantity,
+        if (!user) {
+            alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!');
+            router.push('/login');
+            return;
+        }
+
+        const cartData = {
+            accountId: parseInt(user.id),
+            sanPhamId: product.id,
+            soLuong: quantity,
         };
-        addToCart(productData);
-        router.push('/mycart');
+
+        try {
+            const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/themgiohang`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(cartData),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Lỗi khi gọi API thêm giỏ hàng: ${response.status} - ${errorText}`);
+                throw new Error(`Không thể thêm vào giỏ hàng: ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log("Thêm vào giỏ hàng thành công:", result);
+
+            const productData = {
+                id: product.id,
+                title: product.tenSanPham,
+                subtitle: `${product.soLuong} items`,
+                price: `$${product.giaTien}`,
+                image: { uri: `http://${IP_ADDRESS}:8080/API_for_mobile/api${product.duongDanAnh}` },
+                quantity: result.soLuong,
+            };
+            addToCart(productData);
+
+            router.push('/mycart');
+        } catch (err: any) {
+            console.error("Lỗi khi thêm vào giỏ hàng:", err);
+            alert(`Lỗi khi thêm vào giỏ hàng: ${err.message}`);
+        }
     };
 
-    // Hàm xử lý quay lại màn hình trước đó
     const handleGoBack = () => {
         router.back();
     };
 
-    // Hiển thị khi đang tải
     if (loading) {
         return (
             <View style={styles.container}>
@@ -134,7 +174,6 @@ const ProductPage: React.FC = () => {
         );
     }
 
-    // Hiển thị khi có lỗi
     if (error || !product) {
         return (
             <View style={styles.container}>
@@ -145,7 +184,6 @@ const ProductPage: React.FC = () => {
 
     return (
         <View style={styles.container}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleGoBack}>
                     <FontAwesome name="arrow-left" size={24} color="black" />
@@ -159,7 +197,6 @@ const ProductPage: React.FC = () => {
             </View>
 
             <ScrollView>
-                {/* Product Image */}
                 <View style={styles.imagedaidien}>
                     <Image
                         source={{ uri: `http://${IP_ADDRESS}:8080/API_for_mobile/api${product.duongDanAnh}` }}
@@ -167,14 +204,12 @@ const ProductPage: React.FC = () => {
                         onError={() => console.log('Lỗi tải hình ảnh')}
                     />
                 </View>
-                {/* Product Info */}
                 <View style={styles.productInfo}>
                     <View style={styles.productHeader}>
                         <View>
                             <Text style={styles.productTitle}>{product.tenSanPham}</Text>
                             <Text style={styles.productSubtitle}>{product.soLuong} items</Text>
                         </View>
-
                         <TouchableOpacity onPress={handleLikePress}>
                             <Ionicons
                                 name={liked ? 'heart' : 'heart-outline'}
@@ -198,7 +233,6 @@ const ProductPage: React.FC = () => {
                     </View>
                 </View>
 
-                {/* Product Details */}
                 <View style={styles.productDetails}>
                     <View style={styles.detailSection}>
                         <View style={styles.productdetail}>
@@ -227,7 +261,6 @@ const ProductPage: React.FC = () => {
                 </View>
             </ScrollView>
 
-            {/* Add to Basket Button */}
             <View style={styles.addToBasketContainer}>
                 <TouchableOpacity style={styles.addToBasketButton} onPress={handleAddToBasket}>
                     <Text style={styles.addToBasketText}>Add To Basket</Text>
