@@ -1,27 +1,14 @@
+// contexts/UserContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { User } from "../../services/authService"; // Import User từ authService
 
-// Định nghĩa kiểu cho thông tin người dùng
-interface User {
-  id: string;
-  gmail: string;
-  role: string;
-  hoten:string;
-  diachi:string;
-  gioitinh:boolean| undefined;
-  sinhnhat:string;
-  duongDanAnh:string| undefined;
-}
-
-// Định nghĩa kiểu cho context
 interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
 }
 
-// Tạo context với giá trị mặc định là undefined
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-// Tạo provider để bọc ứng dụng
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
@@ -32,7 +19,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Hook để sử dụng context
 export const useUser = () => {
   const context = useContext(UserContext);
   if (!context) {

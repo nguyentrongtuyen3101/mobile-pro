@@ -1,4 +1,4 @@
-import IP_ADDRESS from "../ipv4";
+// login.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -11,6 +11,7 @@ import {
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import { useUser } from "./contexts/UserContext";
+import { login } from "../services/authService"; // Import service
 
 export default function SignInScreen() {
   const [email, setEmail] = useState("");
@@ -55,70 +56,26 @@ export default function SignInScreen() {
     }
 
     try {
-      const response = await fetch(
-        `http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            gmail: email,
-            matKhau: password,
-          }),
-        }
-      );
+      const user = await login(email, password); // Gọi service
+      setUser(user);
 
-      // Kiểm tra nếu response không hợp lệ (lỗi mạng hoặc không parse được JSON)
-      let data;
-      try {
-        data = await response.json();
-      } catch (jsonError) {
+      if (user.role === "ADMIN") {
         setErrors((prev) => ({
           ...prev,
-          general: "Lỗi khi phân tích dữ liệu từ server",
+          general: "Đăng nhập thành công. Chào mừng ADMIN!",
         }));
-        return;
-      }
-
-      if (response.ok) {
-        // Thành công (status 200-299)
-        setUser({
-          id: data.id,
-          gmail: data.gmail,
-          role: data.role,
-          hoten: data.hoten,
-          diachi: data.diachi,
-          gioitinh: data.gioitinh,
-          sinhnhat: data.sinhnhat,
-          duongDanAnh: data.duongDanAnh,
-        });
-
-        if (data.role === "ADMIN") {
-          setErrors((prev) => ({
-            ...prev,
-            general: "Đăng nhập thành công. Chào mừng ADMIN!",
-          }));
-          Linking.openURL("http://localhost:5000/index.html");
-        } else {
-          setErrors((prev) => ({
-            ...prev,
-            general: `Đăng nhập thành công. Chào mừng ${data.gmail} (Role: ${data.role})`,
-          }));
-          router.push("/(tabs)"); // Đã sửa ở lần trước, giả định /home là route hợp lệ
-        }
+        Linking.openURL("http://localhost:5000/index.html");
       } else {
-        // Lỗi HTTP (401, 404, v.v.)
         setErrors((prev) => ({
           ...prev,
-          general: data.message || "Đã xảy ra lỗi khi đăng nhập",
+          general: `Đăng nhập thành công. Chào mừng ${user.gmail} (Role: ${user.role})`,
         }));
+        router.push("/(tabs)");
       }
     } catch (error) {
-      // Lỗi mạng hoặc lỗi không mong muốn
       setErrors((prev) => ({
         ...prev,
-        general: "Không thể kết nối đến server. Vui lòng kiểm tra lại!",
+        general: error instanceof Error ? error.message : "Đã xảy ra lỗi",
       }));
       console.error(error);
     }

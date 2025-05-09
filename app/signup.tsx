@@ -1,16 +1,24 @@
-import IP_ADDRESS from '../ipv4';
-import React, { useState } from 'react';
+// signup.tsx
+import React, { useState } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, ScrollView, ActivityIndicator,Alert
-} from 'react-native';
-import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { FontAwesome, FontAwesome5 } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { register } from "../services/authService";
 
 const SignUpScreen: React.FC = () => {
-  const [hoTen, setHoTen] = useState('');
-  const [gmail, setGmail] = useState('');
-  const [matKhau, setMatKhau] = useState('');
+  const [hoTen, setHoTen] = useState("");
+  const [gmail, setGmail] = useState("");
+  const [matKhau, setMatKhau] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -70,35 +78,15 @@ const SignUpScreen: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          hoTen,
-          gmail,
-          matKhau,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        Alert.alert('Thành công', data.message || 'Đăng ký thành công!');
-        router.push('/login');
-      } else {
-        setErrors((prev) => ({
-          ...prev,
-          general: data.message || 'Đăng ký thất bại',
-        }));
-      }
+      const user = await register(hoTen, gmail, matKhau);
+      Alert.alert("Thành công", "Đăng ký thành công!");
+      router.push("/login");
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
-        general: 'Không thể kết nối đến server',
+        general: error instanceof Error ? error.message : "Đăng ký thất bại",
       }));
-      console.error('API Error:', error);
+      console.error("API Error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -158,9 +146,7 @@ const SignUpScreen: React.FC = () => {
               />
             </TouchableOpacity>
           </View>
-          {errors.matKhau && (
-            <Text style={styles.errorText}>{errors.matKhau}</Text>
-          )}
+          {errors.matKhau && <Text style={styles.errorText}>{errors.matKhau}</Text>}
         </View>
 
         <TouchableOpacity
@@ -175,11 +161,9 @@ const SignUpScreen: React.FC = () => {
           )}
         </TouchableOpacity>
 
-        {errors.general && (
-          <Text style={styles.errorText}>{errors.general}</Text>
-        )}
+        {errors.general && <Text style={styles.errorText}>{errors.general}</Text>}
 
-        <TouchableOpacity onPress={() => router.push('/login')}>
+        <TouchableOpacity onPress={() => router.push("/login")}>
           <Text style={styles.footerText}>
             Đã có tài khoản? <Text style={styles.loginText}>Đăng nhập</Text>
           </Text>
@@ -187,36 +171,36 @@ const SignUpScreen: React.FC = () => {
       </ScrollView>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white' },
-  scrollContainer: { flexGrow: 1, justifyContent: 'center', padding: 20 },
-  logoContainer: { alignItems: 'center', marginBottom: 30 },
-  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
-  subtitle: { textAlign: 'center', color: 'gray', marginBottom: 24 },
+  container: { flex: 1, backgroundColor: "white" },
+  scrollContainer: { flexGrow: 1, justifyContent: "center", padding: 20 },
+  logoContainer: { alignItems: "center", marginBottom: 30 },
+  title: { fontSize: 24, fontWeight: "bold", textAlign: "center", marginBottom: 8 },
+  subtitle: { textAlign: "center", color: "gray", marginBottom: 24 },
   inputContainer: { marginBottom: 16 },
-  label: { fontSize: 14, color: 'gray', marginBottom: 8 },
+  label: { fontSize: 14, color: "gray", marginBottom: 8 },
   input: {
     padding: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
-  inputWrapper: { position: 'relative' },
-  icon: { position: 'absolute', right: 12, top: '50%', transform: [{ translateY: -10 }] },
+  inputWrapper: { position: "relative" },
+  icon: { position: "absolute", right: 12, top: "50%", transform: [{ translateY: -10 }] },
   button: {
     padding: 16,
-    backgroundColor: '#53B175',
+    backgroundColor: "#53B175",
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 20,
   },
-  disabledButton: { backgroundColor: '#a0a0a0' },
-  buttonText: { color: 'white', fontWeight: '600' },
-  footerText: { textAlign: 'center', marginTop: 20, color: 'gray' },
-  loginText: { color: '#53B175', fontWeight: '600' },
+  disabledButton: { backgroundColor: "#a0a0a0" },
+  buttonText: { color: "white", fontWeight: "600" },
+  footerText: { textAlign: "center", marginTop: 20, color: "gray" },
+  loginText: { color: "#53B175", fontWeight: "600" },
   errorText: {
     color: "red",
     fontSize: 12,
