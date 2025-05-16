@@ -62,7 +62,7 @@ const ProductPage: React.FC = () => {
             }
 
             try {
-                const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/sanphamchitiet/${productId}`);
+                const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/sanphammagager/sanphamchitiet/${productId}`);
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error(`Lỗi khi gọi API: ${response.status} - ${errorText}`);
@@ -128,7 +128,7 @@ const ProductPage: React.FC = () => {
         };
 
         try {
-            const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/themgiohang`, {
+            const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/sanphammagager/themgiohang`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

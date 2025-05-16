@@ -50,7 +50,7 @@ const AllProducts: React.FC = () => {
         };
 
         try {
-            const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/checkmobile/themgiohang`, {
+            const response = await fetch(`http://${IP_ADDRESS}:8080/API_for_mobile/api/sanphammagager/themgiohang`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

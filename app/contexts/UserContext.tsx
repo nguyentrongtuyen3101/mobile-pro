@@ -1,16 +1,16 @@
 // contexts/UserContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { User } from "../../services/authService"; // Import User từ authService
+import { User_model } from "../../services/authService"; // Import User từ authService
 
 interface UserContextType {
-  user: User | null;
-  setUser: (user: User | null) => void;
+  user: User_model | null;
+  setUser: (user: User_model | null) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User_model | null>(null);
 
   return (
     <UserContext.Provider value={{ user, setUser }}>
