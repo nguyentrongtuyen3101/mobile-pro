@@ -12,7 +12,7 @@ export default function TabLayout() {
           screenOptions={{
         // Tùy chỉnh giao diện chung của thanh tab
         tabBarStyle: {
-          backgroundColor: '#F09C42', // Màu nền cam nhạt, đồng bộ với App.js
+          backgroundColor: '#000000', // Màu nền cam nhạt, đồng bộ với App.js
           borderTopWidth: 0, // Xóa viền trên của tab
           height: 60, // Chiều cao thanh tab
           paddingBottom: 5, // Padding dưới để icon và chữ không sát đáy
@@ -23,8 +23,8 @@ export default function TabLayout() {
           shadowRadius: 4, // Bán kính bóng
           elevation: 5, // Đổ bóng cho Android
         },
-        tabBarActiveTintColor: '#8E1E20', // Màu khi tab được chọn (cam đậm)
-        tabBarInactiveTintColor: '#00676B', // Màu khi tab không được chọn (xám)
+        tabBarActiveTintColor: '#DF0029', // Màu khi tab được chọn (cam đậm)
+        tabBarInactiveTintColor: '#98D0B9', // Màu khi tab không được chọn (xám)
         tabBarLabelStyle: {
           fontSize: 12, // Kích thước chữ của nhãn
           fontWeight: '500', // Chữ in đậm nhẹ

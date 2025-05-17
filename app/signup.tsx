@@ -95,77 +95,80 @@ const SignUpScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.logoContainer}>
-          <FontAwesome5 name="carrot" size={50} color="orange" />
+        <View style={styles.carrot}>
+          <FontAwesome5 name="carrot" size={70} color="#00676B" />
         </View>
         <Text style={styles.title}>Đăng ký</Text>
         <Text style={styles.subtitle}>Nhập thông tin để tiếp tục</Text>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Họ và tên</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nhập họ tên"
-            value={hoTen}
-            onChangeText={setHoTen}
-          />
-          {errors.hoTen && <Text style={styles.errorText}>{errors.hoTen}</Text>}
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nhập email"
-            value={gmail}
-            onChangeText={setGmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          {errors.gmail && <Text style={styles.errorText}>{errors.gmail}</Text>}
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Mật khẩu</Text>
-          <View style={styles.inputWrapper}>
+        {/* Khung chứa các mục nhập liệu và nút bấm */}
+        <View style={styles.formContainer}>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Họ và tên</Text>
             <TextInput
               style={styles.input}
-              placeholder="Nhập mật khẩu"
-              secureTextEntry={!showPassword}
-              value={matKhau}
-              onChangeText={setMatKhau}
+              placeholder="Nhập họ tên"
+              value={hoTen}
+              onChangeText={setHoTen}
             />
-            <TouchableOpacity
-              style={styles.icon}
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <FontAwesome
-                name={showPassword ? "eye-slash" : "eye"}
-                size={20}
-                color="gray"
-              />
-            </TouchableOpacity>
+            {errors.hoTen && <Text style={styles.errorText}>{errors.hoTen}</Text>}
           </View>
-          {errors.matKhau && <Text style={styles.errorText}>{errors.matKhau}</Text>}
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Nhập email"
+              value={gmail}
+              onChangeText={setGmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            {errors.gmail && <Text style={styles.errorText}>{errors.gmail}</Text>}
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Mật khẩu</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.inputFlex}
+                placeholder="Nhập mật khẩu"
+                secureTextEntry={!showPassword}
+                value={matKhau}
+                onChangeText={setMatKhau}
+              />
+              <TouchableOpacity
+                style={styles.icon}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <FontAwesome
+                  name={showPassword ? "eye-slash" : "eye"}
+                  size={20}
+                  color="gray"
+                />
+              </TouchableOpacity>
+            </View>
+            {errors.matKhau && <Text style={styles.errorText}>{errors.matKhau}</Text>}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.loginButton, isLoading && styles.disabledButton]}
+            onPress={handleSignUp}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.loginButtonText}>Đăng ký</Text>
+            )}
+          </TouchableOpacity>
+
+          {errors.general && <Text style={styles.errorText}>{errors.general}</Text>}
         </View>
 
-        <TouchableOpacity
-          style={[styles.button, isLoading && styles.disabledButton]}
-          onPress={handleSignUp}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.buttonText}>Đăng ký</Text>
-          )}
-        </TouchableOpacity>
-
-        {errors.general && <Text style={styles.errorText}>{errors.general}</Text>}
-
         <TouchableOpacity onPress={() => router.push("/login")}>
-          <Text style={styles.footerText}>
-            Đã có tài khoản? <Text style={styles.loginText}>Đăng nhập</Text>
+          <Text style={styles.signupText}>
+            Đã có tài khoản? <Text style={styles.signupLink}>Đăng nhập</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -174,37 +177,126 @@ const SignUpScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "white" },
-  scrollContainer: { flexGrow: 1, justifyContent: "center", padding: 20 },
-  logoContainer: { alignItems: "center", marginBottom: 30 },
-  title: { fontSize: 24, fontWeight: "bold", textAlign: "center", marginBottom: 8 },
-  subtitle: { textAlign: "center", color: "gray", marginBottom: 24 },
-  inputContainer: { marginBottom: 16 },
-  label: { fontSize: 14, color: "gray", marginBottom: 8 },
-  input: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    backgroundColor: "#fff",
+  container: {
+    flex: 1,
+    backgroundColor: "#EC870E",
   },
-  inputWrapper: { position: "relative" },
-  icon: { position: "absolute", right: 12, top: "50%", transform: [{ translateY: -10 }] },
-  button: {
-    padding: 16,
-    backgroundColor: "#53B175",
-    borderRadius: 8,
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 20,
+  },
+  carrot: {
     alignItems: "center",
-    marginTop: 20,
+    marginBottom: 50,
   },
-  disabledButton: { backgroundColor: "#a0a0a0" },
-  buttonText: { color: "white", fontWeight: "600" },
-  footerText: { textAlign: "center", marginTop: 20, color: "gray" },
-  loginText: { color: "#53B175", fontWeight: "600" },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 8,
+    color: "#333",
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 30,
+    textAlign: "center",
+  },
+  formContainer: {
+    width: "100%",
+    backgroundColor: "#FFFBD1",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    alignItems: "center",
+  },
+  inputContainer: {
+    width: "100%",
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    color: "#444",
+    marginBottom: 8,
+    fontWeight: "500",
+  },
+  input: {
+    width: "100%",
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: "#E6F1D8",
+    borderWidth: 1,
+    borderColor: "#367517",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 10,
+    backgroundColor: "#E6F1D8",
+    borderWidth: 1,
+    borderColor: "#367517",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    paddingRight: 10,
+  },
+  inputFlex: {
+    flex: 1,
+    padding: 12,
+  },
+  icon: {
+    position: "absolute",
+    right: 12,
+    top: "50%",
+    transform: [{ translateY: -10 }],
+  },
+  loginButton: {
+    width: "100%",
+    padding: 15,
+    backgroundColor: "#367517",
+    borderRadius: 25,
+    alignItems: "center",
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  disabledButton: {
+    backgroundColor: "#a0a0a0",
+  },
+  loginButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  signupText: {
+    fontSize: 14,
+    color: "#333",
+    marginTop: 20,
+    textAlign: "center",
+  },
+  signupLink: {
+    color: "#367517",
+    fontWeight: "bold",
+  },
   errorText: {
-    color: "red",
     fontSize: 12,
     marginTop: 5,
+    textAlign: "center",
   },
 });
 

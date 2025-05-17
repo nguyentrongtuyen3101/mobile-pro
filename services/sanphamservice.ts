@@ -45,5 +45,21 @@ const SanPhamService = {
       throw error;
     }
   },
+  // Hàm mới: Lấy chi tiết sản phẩm theo ID
+  getSanPhamById: async (productId: number): Promise<Product> => {
+    try {
+      const response = await fetch(`${baseurl}/sanphammagager/sanphamchitiet/${productId}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch product details: ${errorText}`);
+      }
+      const data: Product = await response.json();
+      console.log(`Fetched product details for productId ${productId}:`, data);
+      return data;
+    } catch (error) {
+      console.error(`Error fetching product details for productId ${productId}:`, error);
+      throw error;
+    }
+  },
 };
 export default SanPhamService;
